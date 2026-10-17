@@ -122,6 +122,12 @@ Check '有 CSP（且放行 img-src data: 给照片用）' (($csp -match "default
 Check '有 X-Content-Type-Options' ([bool]($homeHead -and $homeHead['X-Content-Type-Options'])) 'nosniff'
 Check '有 Referrer-Policy' ([bool]($homeHead -and $homeHead['Referrer-Policy'])) 'referrer'
 
+# ------------------------------------------------- 后端（FastAPI + SQLite）
+$healthText = Bytes-Text (Get-Bytes "$SiteUrl/api/health")
+Check '后端健康（/api/health 返回 ok:true）' ($healthText -match '"ok":true') ($healthText -replace '\s+', ' ').Trim()
+$notFound = Get-Status "$SiteUrl/api/album/notARealAlbumId"
+Check '未知 album 返回 404（而不是 SPA 兜底 200）' ($notFound -eq 404) $notFound
+
 # ------------------------------------------------- 新增资源（校验真实内容）
 function Test-Png($url) {
     $b = Get-Bytes $url

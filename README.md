@@ -3,13 +3,20 @@
 [![CI](https://github.com/yuanshen-123-ui/love-memoir/actions/workflows/ci.yml/badge.svg)](https://github.com/yuanshen-123-ui/love-memoir/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> 一个只给一个人看的 H5 小游戏。
-> 放进第一张照片 → 点亮一颗心 → 刮开回忆 → 默契挑战 → 星空下贴贴。
+> 一份能「自己生成」的 H5 恋爱回忆录。
+> 访客进来填内容、传 20 张照片 → 得到一个专属链接；打开链接的人看到的是全屏卡点短片 + 撒花。
+> 另外保留了最早那封「只能给她看」的固定版（`/letter`：点亮一颗心 → 刮开回忆 → 默契挑战 → 星空贴贴）。
 > 部署在 <https://love.ccflysim.cn>，90% 以上的访问来自手机、大概率在微信里打开，所以**整套设计只照顾手机**。
 
-## 界面预览
+## 现在它长这样
 
-截图是真机尺寸模拟（390×844 @2x）下跑出来的，不是设计稿：
+**首页 = 创作页**（任何人都能做一份自己的），**/a/xxx = 播放页**（别人点开链接看到的）：
+
+| 创作 · 填内容传照片 | 播放页封面 | 播放完的撒花 |
+| :---: | :---: | :---: |
+| ![创作](docs/screens/6-create.png) | ![封面](docs/screens/7-album-cover.png) | ![撒花](docs/screens/8-album-ended.png) |
+
+**/letter = 最早那封固定版**（保留原样，没删）：
 
 | 开场 · 放进第一张照片 | 第一关 · 点亮成一颗心 |
 | :---: | :---: |
@@ -19,7 +26,44 @@
 | :---: | :---: |
 | ![海报](docs/screens/3-poster.png) | ![结局](docs/screens/4-ending.png) |
 
+截图都是真机尺寸模拟（390×844 @2x）下跑出来的，不是设计稿。
+
 ---
+
+## 0. 三条路由 + 两套后端
+
+| 路由 | 是什么 | 数据从哪来 |
+| --- | --- | --- |
+| `/` | **创作页**：分三步填内容（你们 → 照片+字幕 → 确认），生成分享链接 | 用户当场填，上传到后端 |
+| `/a/:album_id` | **播放页**：封面 → 20 张照片卡点播放 → 撒花 + 结尾那句话 | `GET /api/album/{id}` |
+| `/letter` | 最早那封固定版（文案在 `src/config.js`，照片只存在本机 localStorage） | 纯前端，不联网 |
+
+后端 `backend/`（FastAPI + SQLite + 本地图片）：
+
+| 接口 | 干什么 |
+| --- | --- |
+| `POST /api/upload` | multipart：`payload`(JSON 文案) + `photos`(1~20 张)。存图 → 洗 EXIF → 落库 → 返回 `album_id` 和 `share_url` |
+| `GET /api/album/{id}` | 返回完整配置 + 照片 URL 列表，前端拿去播放 |
+| `GET /api/health` | 健康检查（`{"ok":true,"albums":N,"views":M}`） |
+| `GET /api/docs` | FastAPI 自动生成的接口文档（自己调试用） |
+| `/static/uploads/…` | 上传的照片。生产环境由 **nginx 直接读盘**，不经过 Python |
+
+数据落在哪儿：
+
+```
+/opt/love-memoir-api/
+├── data/albums.db              SQLite：id / payload(JSON) / photos(JSON) / created_at / views
+└── static/uploads/<album_id>/  <uuid>.jpg   每张图服务端二次压缩，长边 1600、JPEG 82
+```
+
+**隐私与防滥用（都是真跑过验证的）**：
+- 手机原图的 **EXIF/GPS 全部洗掉** —— 重画到干净画布再存，一个字节都不留
+- `album_id` 用 `secrets` 生成 12 位随机串，猜不到别人的回忆录
+- 单 IP 每小时最多 20 次上传；单张 ≤8MB、单次 ≤80MB（nginx 层 96MB）
+- 服务端二次压缩：前端压缩可被绕过（直接打接口），必须后端兜底
+
+---
+
 
 ## 1. 它有什么
 
@@ -72,16 +116,35 @@ npm run gen:icons  # 重新生成图标与 og.png（纯 Node，无图形库）
 npm run dev:montage # 单独预览「20 张照片伪视频」组件（dev/montage-harness.html）
 ```
 
+前端要能创建回忆录，还得把后端跑起来（Python 3.10+）：
+
+```bash
+cd backend
+python -m venv .venv
+.venv/Scripts/pip install -r requirements.txt -r requirements-dev.txt   # Windows
+# .venv/bin/pip install ...                                            # macOS / Linux
+.venv/Scripts/python -m pytest        # 18 个接口测试
+cd .. && npm run api                  # uvicorn 跑在 127.0.0.1:8010
+```
+
+`npm run dev`（5174）已经把 `/api` 和 `/static` 代理到 8010，所以本地前后端一起跑就行。
+
 ---
 
 ## 3. 目录结构
 
 ```
 src/
-├── main.js                     # 挂载入口
-├── App.vue                     # 状态机 + 全局背景 + 屏间调度 + 音频/进度/错误兜底
-├── config.js                   # ★ 所有文案 / 题目 / 答案 / 海报文案，都在这里
+├── main.js                     # 挂载入口 + 路由表（/ 、/a/:id 、/letter）
+├── App.vue                     # 外壳：声音开关、提示层、错误兜底、RouterView
+├── config.js                   # ★ /letter 那封固定版的全部文案 / 题目 / 答案
 ├── style.css                   # 设计系统：变量、玻璃、按钮、关键帧、胶片颗粒
+├── api/
+│   └── client.js               # ★ 调后端：createAlbum（带上传进度）/ getAlbum
+├── views/
+│   ├── CreateView.vue          # ★ 首页：三步创作（你们 → 照片+字幕 → 生成链接）
+│   ├── AlbumView.vue           # ★ /a/:id：封面 → 蒙太奇播放 → 撒花
+│   └── LetterView.vue          # /letter：最早那封固定版（四关小游戏）
 ├── audio/
 │   └── sound.js                # ★ 零素材音频引擎（八音盒 BGM + 音效，WebAudio 合成）
 ├── composables/
@@ -111,15 +174,27 @@ src/
     ├── GlassButton.vue         # 按钮
     └── ToastHost.vue           # 提示层
 
-tests/                          # 32 个 Vitest 单元测试
+tests/                          # 32 个 Vitest 单元测试（前端纯函数）
 dev/montage-harness.html(.js)   # MontagePlayer 的独立预览页（只在 dev 下用，不进构建产物）
 scripts/gen-icons.mjs           # 纯 Node 生成 PNG（自己写的 PNG 编码器）
+backend/                        # ★ FastAPI 后端
+├── app/
+│   ├── main.py                 # 接口：/api/upload、/api/album/{id}、/api/health
+│   ├── models.py               # Pydantic 模型（上传校验 / 返回结构）
+│   ├── images.py               # 图片校验 → 转正 → 压缩 → 洗 EXIF → 落盘
+│   ├── db.py                   # 标准库 sqlite3，单表 + 一把锁
+│   ├── ids.py                  # album_id 生成（secrets，12 位随机）
+│   └── config.py               # 全部从环境变量读
+├── tests/test_api.py           # 18 个接口测试
+├── deploy/                     # systemd unit、nginx 补丁、部署/核验脚本
+├── static/uploads/             # 上传的图片（gitignore）
+└── data/                       # SQLite（gitignore）
 deploy/
-├── deploy.ps1                  # 一键部署
-├── smoke.ps1                   # 线上冒烟（17 项）
+├── deploy.ps1                  # 一键部署前端
+├── smoke.ps1                   # 线上冒烟（19 项）
 └── remote-extract.sh           # 服务器端解包
 nginx/
-├── love.ccflysim.cn.conf            # 正式配置（80→443 + SPA 防 404 + 缓存策略）
+├── love.ccflysim.cn.conf            # 正式配置（80→443 + SPA 防 404 + /api 反代 + 缓存策略）
 └── love.ccflysim.cn.http-first.conf # 首次签发证书时用的临时配置
 ```
 
@@ -313,11 +388,15 @@ CI（GitHub Actions）在 push/PR 上跑：`npm ci → lint → test → build �
 ### 7.1 一键部署（推荐）
 
 ```powershell
-.\deploy\deploy.ps1              # 构建 → 打包 → 上传 → 远端解包 → 17 项冒烟
-.\deploy\deploy.ps1 -SkipBuild   # dist 已经是新的，只上传
+.\deploy\deploy.ps1              # 前端：构建 → 打包 → 上传 → 解包 → 19 项冒烟
+.\backend\deploy\deploy-backend.ps1   # 后端：打包 → 上传 → venv/依赖/systemd/nginx 反代/自检
 ```
 
-纯静态站，换完文件立即生效，**不需要 reload nginx**（`assets` 文件名带内容哈希，`index.html` 是 `no-store`）。
+纯静态站换完文件立即生效，**不需要 reload nginx**（`assets` 文件名带内容哈希，`index.html` 是 `no-store`）；
+后端那步会自己 `systemctl restart` + `nginx -t` + `reload`。
+
+后端第一次安装会从 PyPI 拉 ~20 个包，**国内机器建议等 10 分钟**（这台机器到官方源只有十来 KB/s，
+`install.sh` 里默认已经换成阿里云镜像）。装完之后 `systemctl restart love-memoir-api` 是秒级的。
 
 ### 7.2 手动部署
 
@@ -340,6 +419,9 @@ scp -r dist/* root@YOUR_SERVER_IP:/var/www/love.ccflysim.cn/
 | 缓存 | `assets/*` → `public, max-age=31536000, immutable`；`index.html` → `no-store` |
 | SPA 防 404 | `try_files $uri $uri/ /index.html`（`/whatever/123` 返回 200） |
 | 防护 | CSP（放行 `img-src data:`）、`X-Content-Type-Options`、`X-Frame-Options`、`Referrer-Policy`、`Permissions-Policy` |
+| 后端 | FastAPI + uvicorn 只监听 `127.0.0.1:8010`，systemd 单元 `love-memoir-api`（`active`） |
+| 后端数据 | `/opt/love-memoir-api/data/albums.db`（SQLite WAL）；图片 `/opt/love-memoir-api/static/uploads/<album_id>/` |
+| 反代 | `location /api/` → 8010（`client_max_body_size 96m`，读超时 120s）；`location /static/uploads/` 由 nginx **直接 alias 读盘**（不走 Python），`cache-control: public, max-age=2592000` |
 
 **首次部署顺序**（顺序反了 `nginx -t` 会因为证书不存在而失败）：
 
@@ -408,13 +490,22 @@ document.querySelectorAll('.star').length                         // 13
 
 ## 9. 已知限制（都是平台限制，不是 bug）
 
+### 平台相关
+
 1. **微信里点「选照片」一定会弹出系统相册/相机选择器** —— 任何网页都绕不过（`<input type=file>` 是唯一入口），但它本身是原生体验，不难看。
 2. **iOS 没有震动**：`navigator.vibrate` 在 iOS Safari 里不存在，只在安卓生效（已静默降级）。
 3. **微信里长按保存图片对 dataURL 的支持因版本而异**：所以海报弹层给了「长按」+「下载图片」+「截屏」三条路。
 4. **HEIC**：iOS 用 `<input type=file>` 选照片时系统会自动转 JPEG；但在电脑上直接拖 HEIC 会解码失败并提示换一张。
-5. **localStorage 约 5MB**：压缩后一张 ~150KB 够用；配额不足时会 toast 提示，且照片仍在内存里，本次会话能玩完。
+5. **localStorage 约 5MB**：`/letter` 那封固定版只存一张压缩照，够用；配额不足时 toast 提示，本次会话仍能玩完。
 6. **无痕/隐私模式**：部分环境 `localStorage` 不可写，会降级为内存存储（刷新后要重选照片）。
-7. **背景音乐默认开启**：第一屏右上角就有静音开关；切到后台会自动暂停。
+
+### 这个生成器本身的取舍
+
+7. **没有用户账号，也没法「编辑/删除」自己的回忆录**：拿到链接的人就能看，知道 `album_id` 才能删（目前只能人工上服务器删）。
+8. **任何人都能创建**（只有一个很朴素的单 IP 限流）：公网放开就意味着会有人乱传，真要长期开放得加验证码/审核。
+9. **单机 SQLite + 本地磁盘**：这是刻意的轻量选择，适合「几十到几千份回忆录」的量级；要上量就换 Postgres + OSS，接口不用改（`db.py` / `images.py` 各换一处）。
+10. **上传的照片会一直留在服务器上**：没有过期清理任务，需要的话加个 cron 删 90 天前的即可。
+11. **`/letter` 和生成器是两套数据**：固定版永远不联网（照片只在她手机上），生成器才走后端。
 
 ---
 
