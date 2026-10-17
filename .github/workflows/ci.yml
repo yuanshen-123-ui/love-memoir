@@ -29,16 +29,50 @@ jobs:
           echo '--- dist ---'
           du -sh dist
           echo '--- gzip 后 ---'
-          for f in dist/assets/*.js; do echo "$f  $(gzip -c "$f" | wc -c) bytes (gzip)"; done
-          for f in dist/assets/*.css; do echo "$f  $(gzip -c "$f" | wc -c) bytes (gzip)"; done
+          for f in dist/assets/*.js dist/assets/*.css; do
+            echo "$f  $(gzip -c "$f" | wc -c) bytes (gzip)"
+          done
 
-      - name: 静态检查（禁止原生 alert / hover / 写死的 100vh 全屏）
+      # 这几条是为了守住「移动端体验」不被后续改动破坏的硬约束。
+      # 说明：只扫代码行，注释里提到 alert()/hover 不算（否则注释本身会误报）。
+      - name: 静态检查（禁止原生弹窗 / 禁止 :hover / 禁止写死 100vh 全屏）
         run: |
-          set -e
-          if grep -rn --include=*.vue --include=*.js -E '\balert\(|\bconfirm\(|\bprompt\(' src; then
-            echo '::error::发现原生 alert/confirm/prompt 调用'; exit 1
+          fail=0
+
+          echo '--- 原生 alert / confirm / prompt ---'
+          hits=$(grep -rnE --include=*.vue --include=*.js \
+                   'alert\(|confirm\(|prompt\(' src \
+                 | grep -vE '^[^:]+:[0-9]+:[[:space:]]*(\*|//|/\*)' || true)
+          if [ -n "$hits" ]; then
+            echo "$hits"
+            echo '::error::发现原生 alert/confirm/prompt 调用（本项目要求用自绘 toast）'
+            fail=1
+          else
+            echo 'OK'
           fi
-          if grep -rn --include=*.vue --include=*.css ':hover' src; then
-            echo '::error::发现 :hover 规则（移动端会粘连）'; exit 1
+
+          echo '--- :hover 规则 ---'
+          hov=$(grep -rn --include=*.vue --include=*.css ':hover' src || true)
+          if [ -n "$hov" ]; then
+            echo "$hov"
+            echo '::error::发现 :hover 规则（触屏上会粘连成 bug，请改用 :active）'
+            fail=1
+          else
+            echo 'OK'
           fi
-          echo '静态检查通过'
+
+          echo '--- 全屏高度是否只走 100dvh / --app-h ---'
+          # 允许 100vh 作为最外层兜底（见 style.css 的三级兜底注释），
+          # 但除 .stage 之外不允许再出现 height: 100vh
+          bad=$(grep -rn --include=*.vue --include=*.css 'height:[[:space:]]*100vh' src \
+                | grep -v 'style.css' || true)
+          if [ -n "$bad" ]; then
+            echo "$bad"
+            echo '::error::100vh 只能在 style.css 的 .stage 三级兜底里出现'
+            fail=1
+          else
+            echo 'OK'
+          fi
+
+          [ "$fail" -eq 0 ] && echo '静态检查全部通过'
+          exit "$fail"
