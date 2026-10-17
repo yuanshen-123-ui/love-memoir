@@ -273,6 +273,30 @@ npm run build && scp -r dist/* root@YOUR_SERVER_IP:/var/www/love.ccflysim.cn/
 
 部署后跑过一次**真机尺寸的移动端 E2E**（playwright + Edge，iPhone 14 模拟 + HTTP/2 线上环境）：
 上传压缩 → 三关 → 明信片 → 结局撒花，**55/55 全通过**，无 console 错误。
+另外线上 JS 产物的 sha256 与本地 `dist/` 完全一致（`b3f0b7b7…`，99094 字节），确认部署的就是仓库构建出的东西。
+
+**续期验证**（踩过一个坑，记下来免得下次慌）：
+
+```bash
+certbot renew --cert-name love.ccflysim.cn --dry-run   # ← 会先睡 0~8 分钟随机延迟！
+# 日志里是 "Non-interactive renewal: random delay of 99.17 seconds"，
+# 看着像卡死，其实是在做「防雪崩」的随机抖动。别用 100 秒超时去掐它。
+```
+
+想快速确认续期链路是否健康，用这个（跳过随机延迟，完整跑一次 HTTP-01）：
+
+```bash
+certbot certonly --webroot -w /var/www/love.ccflysim.cn -d love.ccflysim.cn \
+  --cert-name love.ccflysim.cn --dry-run --non-interactive
+# → The dry run was successful.
+```
+
+已固化的东西：
+
+- `/var/www/love.ccflysim.cn/.well-known/acme-challenge/` 建成常态目录（0755，公网可访问）
+- `/etc/letsencrypt/renewal/love.ccflysim.cn.conf` 里 `renew_hook = systemctl reload nginx`
+- 另有全局 hook `/etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh`，所有证书续期后都会 reload
+
 
 更新线上只需：
 
