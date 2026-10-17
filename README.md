@@ -69,6 +69,7 @@ npm run lint       # ESLint
 npm test           # 单元测试（Vitest）
 npm run check      # lint + test + build 一条龙
 npm run gen:icons  # 重新生成图标与 og.png（纯 Node，无图形库）
+npm run dev:montage # 单独预览「20 张照片伪视频」组件（dev/montage-harness.html）
 ```
 
 ---
@@ -106,10 +107,12 @@ src/
     ├── HeartRain.vue           # 四、撒花：纯 CSS 爱心雨
     ├── SoundToggle.vue         # 右上角声音开关
     ├── RotateTip.vue           # 横屏提示
+    ├── MontagePlayer.vue       # ★ 20 张照片的「伪视频」播放器（双层 DOM + Ken Burns 运镜）
     ├── GlassButton.vue         # 按钮
     └── ToastHost.vue           # 提示层
 
 tests/                          # 32 个 Vitest 单元测试
+dev/montage-harness.html(.js)   # MontagePlayer 的独立预览页（只在 dev 下用，不进构建产物）
 scripts/gen-icons.mjs           # 纯 Node 生成 PNG（自己写的 PNG 编码器）
 deploy/
 ├── deploy.ps1                  # 一键部署
@@ -213,6 +216,48 @@ y(t) = 13·cos t − 5·cos 2t − 2·cos 3t − cos 4t
 - **没有 `AudioContext`**：所有音频函数安静地什么都不做
 - **`config.js` 某题忘了标 `ok: true`**：把第一个选项当正确答案并警告，绝不让她卡死
 - **渲染抛错**：`onErrorCaptured` 兜住，给一张「刷新一下」的卡片，而不是白屏
+
+### 5.8 伪视频播放器：20 张图只占 2 个 `<img>`
+
+`MontagePlayer.vue` 把 20 张照片播成「抖音图文卡点」的样子。三个关键设计：
+
+**① 双层 DOM 交替，绝不让 20 张图同时进 DOM**
+
+800×1200 的 JPEG 解码后约 3.7MB/张，20 张同时挂在 DOM 上就是 70MB+，iOS Safari 很容易直接杀掉进程。
+所以只有 A/B 两个 `.slot`，换图 = 改 `src`，元素永不重建：
+
+```
+第 1 张：slot0 装 1，opacity 1       slot1 空
+第 2 张：slot1 装 2，opacity 0→1     slot0 opacity 1→0   ← 交叉淡化
+第 3 张：slot0 装 3，opacity 0→1     slot1 opacity 1→0
+…
+```
+
+**② 换图前先解码，再淡入**
+
+直接改 `src` 就淡入的话，iOS 上大图解码会阻塞主线程，淡入那一瞬正好在解码 → 掉帧 + 闪黑。
+所以先 `new Image()` + `decode()` 把下一张准备好（还会顺手预取下一张），再开始交叉淡化。
+另外 `slot.visible = true` 之前要 `await` 两帧 —— 等「opacity: 0」真的画上去，`transition` 才有起点。
+
+**③ 运镜靠换 `animation-name` 重启动画**
+
+不重建节点，只切 `kb-zoom / kb-pan-l / kb-pan-r / kb-rise / kb-tilt-l / kb-tilt-r` 六个动画名。
+CSS 动画会因为动画名变了自动从头播；六套轮转、两个槽交替，同一槽位连续两次拿到的名字必然不同 → 一定重启。
+全部只改 `transform`，配合 `will-change: transform` 交给 GPU。
+
+其余细节：运镜时长 = 停留 + 淡化（交叉那 600ms 画面还在继续推，不会「停下来」）；
+歌词用衬线体 + `backdrop-filter: blur(14px)` 玻璃条，切歌时换 `cap-rise-1/2/3` 重新上浮；
+顶部是 20 段抖音式进度（用 `scaleX` 不用 `width`）；
+控制条默认隐藏，点一下屏幕浮出 3 秒；切后台自动暂停；卸载时把 `src` 清空主动释放位图。
+
+```vue
+<MontagePlayer
+  :photos="base64List"   <!-- 20 张 base64 或 URL -->
+  :lines="captions"      <!-- 和照片一一对应的字幕 -->
+  :slot-ms="1500"
+  @ended="() => (showHearts = true)"
+/>
+```
 
 ---
 

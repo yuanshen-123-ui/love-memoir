@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>MontagePlayer 开发预览</title>
+    <link rel="icon" href="/icons/icon-192.png" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+      }
+      #app {
+        height: 100%;
+      }
+      .harness-btn {
+        position: fixed;
+        left: 6px;
+        top: 6px;
+        z-index: 9999;
+        font-size: 11px;
+        padding: 4px 6px;
+        opacity: 0.35;
+      }
+    </style>
+  </head>
+  <body>
+    <!--
+      MontagePlayer 的独立开发/验收页（只在 vite dev 下可用，不会进构建产物）：
+        npm run dev:montage
+        → http://localhost:5174/dev/montage-harness.html
+      参数：?slot=1500&fade=600（停留时长 / 交叉淡化时长，调快便于调试）
+    -->
+    <div id="app"></div>
+    <script type="module" src="/dev/montage-harness.js"></script>
+  </body>
+</html>
