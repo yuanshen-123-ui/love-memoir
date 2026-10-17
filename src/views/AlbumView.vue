@@ -14,7 +14,9 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { getAlbum } from '../api/client.js'
 import { unlock, startMusic, setMood, stopMusic, sfx } from '../audio/sound.js'
+import { CONFIG } from '../config.js'
 import BgDecor from '../components/BgDecor.vue'
+import StarLevel from '../components/StarLevel.vue'
 import MontagePlayer from '../components/MontagePlayer.vue'
 import HeartRain from '../components/HeartRain.vue'
 import GlassButton from '../components/GlassButton.vue'
@@ -22,7 +24,7 @@ import GlassButton from '../components/GlassButton.vue'
 const route = useRoute()
 const router = useRouter()
 
-/** loading | error | cover | play | ended */
+/** loading | error | cover | star | play | ended */
 const state = ref('loading')
 const album = ref(null)
 const errorText = ref('')
@@ -59,6 +61,12 @@ onMounted(async () => {
 function start() {
   unlock()
   startMusic('game')
+  // 先点亮 13 颗心形星星，再放照片 —— 这个仪式感是这条回忆录的灵魂，不能省
+  state.value = 'star'
+}
+
+/** 13 颗星全亮 → 开始照片短片 */
+function onStarsDone() {
   state.value = 'play'
 }
 
@@ -106,16 +114,22 @@ onBeforeUnmount(stopMusic)
 
         <button type="button" class="start-btn" @click="start">
           <span class="start-ico" aria-hidden="true">▶</span>
-          <span>开始播放</span>
+          <span>开始</span>
         </button>
 
         <p class="cover-hint">
-          {{ photoUrls.length }} 张照片 · {{ seconds }} 秒
+          13 颗星星 · {{ photoUrls.length }} 张照片 · {{ seconds }} 秒
         </p>
       </div>
 
       <RouterLink class="made-by" to="/">我也做一份</RouterLink>
     </section>
+
+    <!-- ============================== 点亮一颗心 ============================== -->
+    <main v-else-if="state === 'star'" class="stage">
+      <BgDecor />
+      <StarLevel :config="CONFIG" @done="onStarsDone" />
+    </main>
 
     <!-- ============================== 播放 ============================== -->
     <MontagePlayer
