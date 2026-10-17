@@ -221,6 +221,8 @@ y(t) = 13·cos t − 5·cos 2t − 2·cos 3t − cos 4t
 
 `MontagePlayer.vue` 把 20 张照片播成「抖音图文卡点」的样子。三个关键设计：
 
+![伪视频播放器](docs/screens/5-montage.png)
+
 **① 双层 DOM 交替，绝不让 20 张图同时进 DOM**
 
 800×1200 的 JPEG 解码后约 3.7MB/张，20 张同时挂在 DOM 上就是 70MB+，iOS Safari 很容易直接杀掉进程。
