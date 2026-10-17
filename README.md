@@ -391,8 +391,9 @@ CI（GitHub Actions）在 push/PR 上跑：`npm ci → lint → test → build �
 ### 7.1 一键部署（推荐）
 
 ```powershell
-.\deploy\deploy.ps1              # 前端：构建 → 打包 → 上传 → 解包 → 19 项冒烟
-.\backend\deploy\deploy-backend.ps1   # 后端：打包 → 上传 → venv/依赖/systemd/nginx 反代/自检
+# 把 root@YOUR_SERVER_IP 换成你自己的服务器（脚本默认是占位符，不传会直接报错提醒）
+.\deploy\deploy.ps1 -SshTarget root@YOUR_SERVER_IP              # 前端：构建 → 打包 → 上传 → 解包 → 19 项冒烟
+.\backend\deploy\deploy-backend.ps1 -SshTarget root@YOUR_SERVER_IP   # 后端：打包 → 上传 → venv/依赖/systemd/nginx 反代/自检
 ```
 
 纯静态站换完文件立即生效，**不需要 reload nginx**（`assets` 文件名带内容哈希，`index.html` 是 `no-store`）；
@@ -408,27 +409,23 @@ npm run build
 scp -r dist/* root@YOUR_SERVER_IP:/var/www/love.ccflysim.cn/
 ```
 
-### 7.3 线上现状（2026-10-17 部署，v2）
+### 7.3 部署要点
 
-| 项 | 值 |
+| 项 | 做法 |
 | --- | --- |
-| 访问地址 | <https://love.ccflysim.cn> |
-| 服务器 | `YOUR_SERVER_IP` · Ubuntu · **nginx 1.18.0** |
-| 站点根目录 | `/var/www/love.ccflysim.cn` |
-| nginx 配置 | `/etc/nginx/sites-available/love.ccflysim.cn`（软链进 sites-enabled） |
-| 证书 | Let's Encrypt，`CN=love.ccflysim.cn`，到期 **2027-01-15** |
-| 自动续期 | `certbot.timer`（每日）+ `renew_hook = systemctl reload nginx` |
-| HTTP/2 | 已开启（`listen 443 ssl http2`，1.18 的写法） |
+| 访问地址 | <https://love.ccflysim.cn>（在线 demo） |
+| 证书 | Let's Encrypt + `certbot.timer`（每日续期），`renew_hook = systemctl reload nginx` |
+| HTTP/2 | `listen 443 ssl http2` |
 | 缓存 | `assets/*` → `public, max-age=31536000, immutable`；`index.html` → `no-store` |
 | SPA 防 404 | `try_files $uri $uri/ /index.html`（`/whatever/123` 返回 200） |
 | 防护 | CSP（放行 `img-src data:`）、`X-Content-Type-Options`、`X-Frame-Options`、`Referrer-Policy`、`Permissions-Policy` |
-| 后端 | FastAPI + uvicorn 只监听 `127.0.0.1:8010`，systemd 单元 `love-memoir-api`（`active`） |
-| 后端数据 | `/opt/love-memoir-api/data/albums.db`（SQLite WAL）；图片 `/opt/love-memoir-api/static/uploads/<album_id>/` |
+| 后端 | FastAPI + uvicorn 只监听 `127.0.0.1:8010`，systemd 单元 `love-memoir-api` |
 | 反代 | `location /api/` → 8010（`client_max_body_size 96m`，读超时 120s）；`location /static/uploads/` 由 nginx **直接 alias 读盘**（不走 Python），`cache-control: public, max-age=2592000` |
 
 **首次部署顺序**（顺序反了 `nginx -t` 会因为证书不存在而失败）：
 
 ```bash
+# 0) 下面的 root@YOUR_SERVER_IP 换成你自己的服务器地址
 # 1) 上传 dist
 ssh root@YOUR_SERVER_IP 'mkdir -p /var/www/love.ccflysim.cn'
 scp -r dist/* root@YOUR_SERVER_IP:/var/www/love.ccflysim.cn/

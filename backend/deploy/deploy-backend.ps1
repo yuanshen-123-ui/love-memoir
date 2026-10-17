@@ -10,7 +10,7 @@
     幂等：重复跑只会升级代码并重启服务，.env 和数据不会被动。
 
 .EXAMPLE
-    .\backend\deploy\deploy-backend.ps1
+    .\backend\deploy\deploy-backend.ps1 -SshTarget root@YOUR_SERVER_IP
 #>
 [CmdletBinding()]
 param(
@@ -18,6 +18,9 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($SshTarget -like '*YOUR_SERVER_IP*') {
+    throw '请用 -SshTarget 指定服务器，例如：.\backend\deploy\deploy-backend.ps1 -SshTarget root@1.2.3.4'
+}
 # $PSScriptRoot = <repo>\backend\deploy
 $backend = Split-Path -Parent $PSScriptRoot
 $tarball = Join-Path $env:TEMP 'love-api.tgz'

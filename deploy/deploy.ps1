@@ -14,9 +14,9 @@
     assets 文件名带内容哈希、index.html 是 no-store，换完立刻生效。
 
 .EXAMPLE
-    .\deploy\deploy.ps1
-    .\deploy\deploy.ps1 -SkipBuild          # dist 已经是新的，只上传
-    .\deploy\deploy.ps1 -SkipSmoke          # 不跑冒烟
+    .\deploy\deploy.ps1 -SshTarget root@YOUR_SERVER_IP
+    .\deploy\deploy.ps1 -SshTarget root@YOUR_SERVER_IP -SkipBuild   # dist 已经是新的，只上传
+    .\deploy\deploy.ps1 -SshTarget root@YOUR_SERVER_IP -SkipSmoke   # 不跑冒烟
 #>
 [CmdletBinding()]
 param(
@@ -28,6 +28,9 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($SshTarget -like '*YOUR_SERVER_IP*') {
+    throw '请用 -SshTarget 指定服务器，例如：.\deploy\deploy.ps1 -SshTarget root@1.2.3.4'
+}
 $root = Split-Path -Parent $PSScriptRoot
 $tarball = Join-Path $env:TEMP 'love-dist.tgz'
 
