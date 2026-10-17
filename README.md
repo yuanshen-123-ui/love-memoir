@@ -51,8 +51,8 @@
 
 - **32 个单元测试**（Vitest）：心形曲线的数学性质、随机数可复现性、图片目标尺寸、config 自检
 - **ESLint 9 flat config + CI 硬约束**：禁止原生弹窗、禁止 `:hover`、`100vh` 只许出现在三级兜底里
-- **一键部署**：`deploy/deploy.ps1`（构建→打包→上传→远端解包→自动冒烟）
-- **14 项线上冒烟**：`deploy/smoke.ps1`，用 PNG magic bytes 校验图标（避免被 SPA 兜底的 200 假绿）
+- **一键部署**：`deploy/deploy.ps1`（构建→打包→上传→远端解包→17 项自动冒烟）
+- **17 项线上冒烟**：`deploy/smoke.ps1`，用 PNG magic bytes 校验图标（避免被 SPA 兜底的 200 假绿）
 - **换掉故事只用改一个文件**：`src/config.js`，改错了开发态会在控制台中文提示，CI 也会拦住
 
 ---
@@ -113,7 +113,7 @@ tests/                          # 32 个 Vitest 单元测试
 scripts/gen-icons.mjs           # 纯 Node 生成 PNG（自己写的 PNG 编码器）
 deploy/
 ├── deploy.ps1                  # 一键部署
-├── smoke.ps1                   # 线上冒烟（14 项）
+├── smoke.ps1                   # 线上冒烟（17 项）
 └── remote-extract.sh           # 服务器端解包
 nginx/
 ├── love.ccflysim.cn.conf            # 正式配置（80→443 + SPA 防 404 + 缓存策略）
@@ -243,7 +243,7 @@ CI（GitHub Actions）在 push/PR 上跑：`npm ci → lint → test → build �
 ### 7.1 一键部署（推荐）
 
 ```powershell
-.\deploy\deploy.ps1              # 构建 → 打包 → 上传 → 远端解包 → 14 项冒烟
+.\deploy\deploy.ps1              # 构建 → 打包 → 上传 → 远端解包 → 17 项冒烟
 .\deploy\deploy.ps1 -SkipBuild   # dist 已经是新的，只上传
 ```
 
