@@ -21,6 +21,12 @@ jobs:
       - name: 安装依赖
         run: npm ci
 
+      - name: Lint（ESLint 9 flat config）
+        run: npm run lint
+
+      - name: 单元测试（Vitest）
+        run: npm test
+
       - name: 构建
         run: npm run build
 

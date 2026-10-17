@@ -17,11 +17,22 @@ export default defineConfig({
     // 语法降到 es2018，避免老机型白屏（可选链等由 esbuild 转译）
     target: 'es2018',
     cssTarget: 'chrome61',
-    // 小图内联成 base64，减少一次请求（本项目几乎没有静态图，主要给 favicon 兜底）
+    // 小图内联成 base64，减少一次请求
     assetsInlineLimit: 4096,
     // 单文件提醒阈值调高：这个项目就是一个小 SPA，不需要拆包
     chunkSizeWarningLimit: 800,
     // 移动端弱网：生产 sourcemap 只会变大，不留
     sourcemap: false,
+  },
+
+  /**
+   * 单元测试（vitest）配置。
+   * environment: 'node' —— 被测的都是纯函数（心形曲线、随机数、尺寸计算、config 校验），
+   * 不需要 DOM，跑得最快。
+   */
+  test: {
+    environment: 'node',
+    include: ['tests/**/*.test.js'],
+    reporters: 'default',
   },
 })
