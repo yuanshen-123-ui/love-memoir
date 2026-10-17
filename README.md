@@ -256,6 +256,33 @@ npm run build && scp -r dist/* root@YOUR_SERVER_IP:/var/www/love.ccflysim.cn/
 - `assets/*` 文件名带内容哈希，一年强缓存，**替换不失效**
 - `index.html` 是 `no-store`，**每次都会拉新的** → 不会出现"微信里还是旧版本"的白屏惨案
 
+### 6.7 线上现状（2026-10-17 已部署）
+
+| 项 | 值 |
+| --- | --- |
+| 访问地址 | <https://love.ccflysim.cn> |
+| 服务器 | `YOUR_SERVER_IP` · Ubuntu · **nginx 1.18.0** |
+| 站点根目录 | `/var/www/love.ccflysim.cn` |
+| nginx 配置 | `/etc/nginx/sites-available/love.ccflysim.cn`（软链进 sites-enabled） |
+| 证书 | Let's Encrypt，`CN=love.ccflysim.cn`，到期 **2027-01-15** |
+| 自动续期 | `certbot.timer`（systemd 每日跑）+ `renew_hook = systemctl reload nginx` |
+| HTTP/2 | 已开启（`listen 443 ssl http2`，1.18 的写法） |
+| 缓存 | `assets/*` → `public, max-age=31536000, immutable`；`index.html` → `no-store` |
+| SPA 防 404 | `try_files $uri $uri/ /index.html`（实测 `/whatever/123` 返回 200） |
+| 防护 | CSP（放行 `img-src data:`）、`X-Content-Type-Options`、`X-Frame-Options`、`Referrer-Policy`、`Permissions-Policy` |
+
+部署后跑过一次**真机尺寸的移动端 E2E**（playwright + Edge，iPhone 14 模拟 + HTTP/2 线上环境）：
+上传压缩 → 三关 → 明信片 → 结局撒花，**55/55 全通过**，无 console 错误。
+
+更新线上只需：
+
+```bash
+npm run build
+scp -r dist/* root@YOUR_SERVER_IP:/var/www/love.ccflysim.cn/
+```
+
+（`assets/` 是覆盖新增，`index.html` 会立即生效——因为它是 `no-store`，用户刷新即拿到新版本。）
+
 ---
 
 ## 7. 调试
