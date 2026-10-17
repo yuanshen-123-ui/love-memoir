@@ -1,0 +1,10 @@
+node_modules/
+dist/
+dist-bak-*/
+.DS_Store
+Thumbs.db
+*.local
+.vite/
+.audit-tmp/
+npm-debug.log*
+yarn-error.log*

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+
+    <!--
+      移动端视口三件套，缺一不可：
+      1. viewport-fit=cover —— 没有它 env(safe-area-inset-*) 永远是 0，iPhone 小黑条会盖住底部按钮
+      2. maximum-scale / user-scalable=no —— 防止微信里双指缩放把排版放大错位
+      3. initial-scale=1 —— 基准缩放
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+
+    <!-- iOS 状态栏与浏览器 UI 的配色（安卓微信/Chrome 也读这个） -->
+    <meta name="theme-color" content="#f4e2da" />
+
+    <!-- 别把日期/电话识别成可点链接（微信里点了会跳走，很破坏体验） -->
+    <meta name="format-detection" content="telephone=no, email=no, address=no" />
+
+    <!-- 添加到主屏时用全屏 -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="恋爱回忆录" />
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='27' font-size='27' fill='%23d79db3'%3E%E2%99%A5%3C/text%3E%3C/svg%3E"
+    />
+
+    <title>我们的恋爱回忆录</title>
+
+    <style>
+      /*
+        首屏兜底样式（内联，先于 JS 生效）：
+        避免 Vue 挂载前出现白屏 flash，也避免这一瞬间出现原生滚动条。
+        真正的设计系统在 src/style.css 里。
+      */
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+      body {
+        background: linear-gradient(160deg, #f7e6cf 0%, #f6dfe3 48%, #f0d6df 100%);
+        overflow: hidden;
+        overscroll-behavior-y: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      #app {
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

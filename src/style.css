@@ -1,0 +1,560 @@
+/* ============================================================================
+ *  设计系统 / 全局样式
+ *  ---------------------------------------------------------------------------
+ *  设计原则（全部围绕「手机 + 微信内置浏览器」这一唯一场景）：
+ *    1. 视觉：香槟金 → 冷玫瑰的柔和渐变 + 液态玻璃（blur 固定 12px，不叠加多层模糊）
+ *    2. 交互：没有鼠标 hover，只有 :active 按压缩放（transform: scale(0.96)）
+ *    3. 布局：高度用 --app-h（JS 实测）/ 100dvh，绝不用 100vh 做全屏
+ *    4. 安全区：底部按钮一律留 env(safe-area-inset-bottom)
+ *    5. 性能：所有动效只动 transform / opacity，交给 GPU 合成，不触发重排
+ * ========================================================================== */
+
+/* ---------------------------------------------------------------- 设计变量 */
+:root {
+  /* 香槟金 → 冷玫瑰：整套配色的唯一来源，想换肤只改这几行 */
+  --c-gold: #f3e0c0;
+  --c-gold-deep: #e0c69c;
+  --c-rose: #f7dbe4;
+  --c-rose-deep: #d99db2;
+  --c-rose-soft: #efc9d6;
+
+  /* 文字：暖棕，比纯黑柔和，压在粉金背景上不脏 */
+  --c-ink: #4a363c;
+  --c-ink-soft: rgba(74, 54, 60, 0.62);
+  --c-ink-faint: rgba(74, 54, 60, 0.4);
+  --c-white: #fff;
+
+  /* ---- 液态玻璃 ------------------------------------------------ */
+  /* blur 固定 12px：再高在安卓 X5 内核上会明显掉帧，这是实测的甜点 */
+  --glass-blur: 12px;
+  --glass-bg: rgba(255, 255, 255, 0.6);
+  --glass-bg-strong: rgba(255, 255, 255, 0.76);
+  --glass-border: rgba(255, 255, 255, 0.66);
+  /* 三层 inset 才像一块有厚度的玻璃：上高光 + 下反光 + 0.5px 描边感 */
+  --glass-inner: inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.45);
+  --glass-shadow: 0 10px 30px rgba(170, 110, 130, 0.16), 0 2px 8px rgba(170, 110, 130, 0.1);
+
+  /* ---- 动效 ---------------------------------------------------- */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* 弹簧：会轻微过冲 */
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --tap: 0.96; /* 按压缩放比例 */
+
+  /* ---- 安全区（必须在 index.html 里写 viewport-fit=cover 才有值） --- */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+
+  /* 应用真实高度：JS 会写入 px；写不出来时退回 dvh */
+  --app-h: 100dvh;
+
+  color-scheme: light;
+}
+
+/* ------------------------------------------------------------------ 重置 */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent; /* 干掉安卓那层灰色点击高亮 */
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  /* 系统默认无衬线字体：iOS 用 SF，中文落到苹方/思源 */
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC',
+    'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--c-ink);
+  background: #f6e3dc; /* 兜底色，真正的渐变在 .bg 层 */
+
+  /* 防回弹三连：滚不动、不橡皮筋、只有纵向手势 */
+  overflow: hidden;
+  overscroll-behavior-y: none;
+  touch-action: pan-y;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+
+  /* 手机上没有「鼠标」，选中文字 / 长按弹菜单只会妨碍操作 */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation; /* 去掉 300ms 双击缩放延迟 */
+}
+
+/* ------------------------------------------------------- 滚动条：一个都不许露 */
+/* 需要滚动的容器加 .scroll-y，滚动条在 iOS/微信里不可见 */
+.scroll-y {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain; /* 滚到底不要带动整个页面 */
+}
+.scroll-y::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none;
+}
+.scroll-y {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+/* 全局兜底：任何意外出现的滚动条也藏起来 */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+html {
+  scrollbar-width: none;
+}
+
+/* ------------------------------------------------------------ 液态玻璃类 */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-inner);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+}
+.glass--strong {
+  background: var(--glass-bg-strong);
+}
+/* 老安卓 X5 内核（Chromium < 76）不支持 backdrop-filter：
+   退化成一块更不透明的白玻璃，比直接透明糊成一团好 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background: rgba(255, 255, 255, 0.86);
+  }
+}
+
+/* --------------------------------------------------------------- 按钮体系 */
+/* 全站唯一交互反馈：按下缩小到 0.96 —— 没有 hover，因为手机上没有 hover */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 54px;
+  padding: 0 28px;
+  border-radius: 999px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--c-gold-deep) 0%, var(--c-rose-deep) 100%);
+  box-shadow: 0 10px 24px rgba(190, 130, 150, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  transition: transform 0.16s var(--ease-out), box-shadow 0.16s var(--ease-out),
+    opacity 0.2s ease;
+  will-change: transform;
+}
+.btn:active {
+  transform: scale(var(--tap));
+  box-shadow: 0 4px 12px rgba(190, 130, 150, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.btn[disabled] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.btn--block {
+  display: flex;
+  width: 100%;
+}
+.btn--ghost {
+  color: var(--c-ink);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-inner);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+}
+.btn--sm {
+  min-height: 42px;
+  padding: 0 18px;
+  font-size: 15px;
+}
+
+/* 非 <button> 的可点区域（星星、选项、照片）统一用 .press */
+.press {
+  transition: transform 0.16s var(--ease-out), opacity 0.16s ease;
+  will-change: transform;
+}
+.press:active {
+  transform: scale(var(--tap));
+}
+
+/* --------------------------------------------------------------- 应用骨架 */
+.app {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* 高度三级兜底：
+   ① 100vh  给极老浏览器
+   ② 100dvh 地址栏伸缩时自动跟手（iOS 16.4+ / 现代安卓）
+   ③ var(--app-h) JS 实测像素（iOS 15 及更早、微信 X5 走这条） */
+.stage {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  height: var(--app-h, 100dvh);
+  overflow: hidden;
+}
+
+/* 每一屏的公共骨架：上安全区 + 底部拇指操作区 */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--safe-top) + 16px) calc(20px + var(--safe-right)) 0
+    calc(20px + var(--safe-left));
+  overflow: hidden;
+}
+
+/* 底部操作区：所有「主按钮」都放这里 —— 大拇指最容易够到的地方，
+   并且统一让出 iPhone 小黑条的高度 */
+.thumb-bar {
+  position: relative;
+  z-index: 4;
+  flex: none;
+  margin-top: auto;
+  display: grid;
+  gap: 10px;
+  padding: 12px 0 calc(16px + var(--safe-bottom));
+}
+
+/* ------------------------------------------------------------- 关卡标题区 */
+.lv-head {
+  flex: none;
+  text-align: center;
+  /* 顶部留出 14px：给绝对的进度圆点（.dots）让位，两者不能重叠 */
+  padding: 14px 0 2px;
+}
+.lv-kicker {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: var(--c-ink-faint);
+}
+.lv-title {
+  margin: 6px 0 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  background: linear-gradient(120deg, #8a5a48 0%, #b5707f 60%, #c98a9b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.lv-sub {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--c-ink-soft);
+}
+.t-hint {
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--c-ink-faint);
+}
+
+/* --------------------------------------------------------------- 进度圆点 */
+.dots {
+  position: absolute;
+  z-index: 5;
+  top: calc(var(--safe-top) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 7px;
+  pointer-events: none;
+}
+.dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: inset 0 0 0 0.5px rgba(120, 80, 90, 0.18);
+  transition: transform 0.3s var(--ease-spring), background 0.3s ease;
+}
+.dots i.on {
+  background: linear-gradient(135deg, var(--c-gold-deep), var(--c-rose-deep));
+  transform: scale(1.35);
+}
+
+/* ------------------------------------------------------------- 隐藏文件框 */
+/* 绝不能让原生 file 控件露脸，但也不能 display:none ——
+   部分老 iOS Safari / 微信里 display:none 的 input.click() 会静默失效，
+   所以挪到屏幕外 1px 大小、opacity:0，仍然可被 JS 点击 */
+.file-input {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------- 自定义提示 */
+/* 代替原生 alert()：原生 alert 在微信里会阻塞渲染、样式丑、还可能被拦截 */
+.toast-host {
+  position: fixed;
+  z-index: 90;
+  left: 0;
+  right: 0;
+  bottom: calc(96px + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  padding: 0 24px;
+}
+.toast {
+  max-width: 78vw;
+  padding: 11px 18px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--c-ink);
+  text-align: center;
+  border-radius: 999px;
+}
+.toast-enter-active,
+.toast-leave-active {
+  transition: opacity 0.24s ease, transform 0.24s var(--ease-spring);
+}
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translate3d(0, 10px, 0) scale(0.94);
+}
+
+/* ------------------------------------------------------------ 屏间过渡 */
+.screen-enter-active,
+.screen-leave-active {
+  transition: opacity 0.3s var(--ease-out), transform 0.3s var(--ease-out);
+}
+.screen-enter-from {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0) scale(0.99);
+}
+.screen-leave-to {
+  opacity: 0;
+  transform: translate3d(0, -10px, 0) scale(0.99);
+}
+
+/* 通用淡入上浮 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.35s ease, transform 0.35s var(--ease-spring);
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translate3d(0, 12px, 0);
+}
+
+/* ============================================================================
+ *  关键帧
+ *  说明：全部只改 transform / opacity —— 这两个属性由合成器处理，
+ *  不会触发 layout/paint 重排，是手机上唯一便宜的动画方式。
+ * ========================================================================== */
+
+/* 抖错：弹性抖动（第三关答错） */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  12% {
+    transform: translate3d(-9px, 0, 0) rotate(-1.2deg);
+  }
+  28% {
+    transform: translate3d(8px, 0, 0) rotate(1deg);
+  }
+  44% {
+    transform: translate3d(-6px, 0, 0) rotate(-0.7deg);
+  }
+  62% {
+    transform: translate3d(4px, 0, 0) rotate(0.5deg);
+  }
+  80% {
+    transform: translate3d(-2px, 0, 0);
+  }
+}
+
+/* 照片落进相框：从上方掉下来 + 过冲回弹（弹簧感） */
+@keyframes dropIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -130px, 0) scale(0.72) rotate(-7deg);
+  }
+  55% {
+    opacity: 1;
+    transform: translate3d(0, 12px, 0) scale(1.04) rotate(2deg);
+  }
+  76% {
+    transform: translate3d(0, -5px, 0) scale(0.99) rotate(-0.8deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0);
+  }
+}
+
+/* 上浮出现 */
+@keyframes floatUp {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 26px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* 弹出 */
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 星星闪烁（结局星空 / 未点亮提示） */
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: scale(0.82);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.16);
+  }
+}
+
+/* 爱心掉落：30~50 个纯 CSS 元素，靠 translate3d + opacity 走 GPU */
+@keyframes heartFall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -14vh, 0) rotate(0deg) scale(0.8);
+  }
+  10% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--drift, 0px), 112vh, 0) rotate(var(--spin, 180deg)) scale(1);
+  }
+}
+
+/* 光晕呼吸（点亮后的星星 / 提示） */
+@keyframes glowPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(240, 190, 150, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 14px rgba(240, 190, 150, 0);
+  }
+}
+
+/* 背景光球缓慢呼吸 */
+@keyframes breathe {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate3d(2%, -3%, 0) scale(1.08);
+    opacity: 1;
+  }
+}
+
+/* 转圈（压缩中） */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 打字机光标 */
+@keyframes caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 相框扫光 */
+@keyframes sheen {
+  0% {
+    transform: translate3d(-140%, 0, 0) rotate(18deg);
+  }
+  100% {
+    transform: translate3d(240%, 0, 0) rotate(18deg);
+  }
+}
+
+/* 尊重系统「减少动态效果」：关掉装饰性循环动画，保留必要的状态切换 */
+@media (prefers-reduced-motion: reduce) {
+  .dots i {
+    transition: none;
+  }
+  .bg-orb,
+  .sky-star,
+  .frame-sheen {
+    animation: none !important;
+  }
+}
