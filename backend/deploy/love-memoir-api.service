@@ -1,0 +1,36 @@
+[Unit]
+Description=love-memoir API (FastAPI + SQLite)
+Documentation=https://github.com/yuanshen-123-ui/love-memoir
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# 静态站也是 www-data 在跑，图片目录要给它读写一致
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/love-memoir-api
+EnvironmentFile=/opt/love-memoir-api/.env
+
+# 只监听 127.0.0.1：公网入口一律走 nginx，uvicorn 不直接暴露
+ExecStart=/opt/love-memoir-api/.venv/bin/uvicorn app.main:app \
+    --host 127.0.0.1 \
+    --port 8010 \
+    --proxy-headers \
+    --forwarded-allow-ips=127.0.0.1 \
+    --workers 1
+
+Restart=always
+RestartSec=3
+# 上传 20 张图时 CPU 会忙一会儿，别被 systemd 的默认超时误杀
+TimeoutStopSec=20
+
+# ---- 基本加固：只能写 data/ 和 static/，其余只读 ----
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/love-memoir-api/data /opt/love-memoir-api/static
+
+[Install]
+WantedBy=multi-user.target

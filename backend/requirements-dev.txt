@@ -1,0 +1,5 @@
+# Dev/test only (not needed in production).
+# Keep this file ASCII-only: pip reads requirements with the system locale encoding,
+# and cp936 on a Chinese Windows box chokes on UTF-8 comments.
+pytest==8.3.4
+httpx==0.28.1
