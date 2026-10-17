@@ -1,5 +1,8 @@
 # 我们的恋爱回忆录
 
+[![CI](https://github.com/yuanshen-123-ui/love-memoir/actions/workflows/ci.yml/badge.svg)](https://github.com/yuanshen-123-ui/love-memoir/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 > 一个只给一个人看的 H5 小游戏。四步：放进第一张照片 → 点亮星星 → 刮开回忆 → 默契挑战 → 星空和贴贴。
 > 部署在 <https://love.ccflysim.cn>，90% 以上的访问来自手机 / 微信内置浏览器，所以**整套设计只照顾手机**。
 
@@ -289,4 +292,7 @@ localStorage.getItem('love-memoir:photo').length                  // 压缩后�
 
 ## 9. License
 
-私人项目，未授权公开分发。照片和文字仅属于它的主人。
+- **代码**：[MIT](LICENSE) —— 随便用、随便改、随便拿去写你自己的版本。
+- `src/config.js` 里那套示例文案（题目、情话）也一起开源，你改成自己的就行。
+- 但**你自己的照片、你们的故事、线上服务器的证书私钥**不在这个仓库里，也不在开源范围内。
+  照片只存在访问者自己手机的 `localStorage` 里，从不上传任何服务器 —— 这一点是刻意的。

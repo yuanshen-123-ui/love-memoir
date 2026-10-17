@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: 构建校验
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 构建
+        run: npm run build
+
+      - name: 产物体积
+        run: |
+          echo '--- dist ---'
+          du -sh dist
+          echo '--- gzip 后 ---'
+          for f in dist/assets/*.js; do echo "$f  $(gzip -c "$f" | wc -c) bytes (gzip)"; done
+          for f in dist/assets/*.css; do echo "$f  $(gzip -c "$f" | wc -c) bytes (gzip)"; done
+
+      - name: 静态检查（禁止原生 alert / hover / 写死的 100vh 全屏）
+        run: |
+          set -e
+          if grep -rn --include=*.vue --include=*.js -E '\balert\(|\bconfirm\(|\bprompt\(' src; then
+            echo '::error::发现原生 alert/confirm/prompt 调用'; exit 1
+          fi
+          if grep -rn --include=*.vue --include=*.css ':hover' src; then
+            echo '::error::发现 :hover 规则（移动端会粘连）'; exit 1
+          fi
+          echo '静态检查通过'
