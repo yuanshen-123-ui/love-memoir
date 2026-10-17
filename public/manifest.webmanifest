@@ -1,0 +1,32 @@
+{
+  "name": "我们的恋爱回忆录",
+  "short_name": "恋爱回忆录",
+  "description": "一个只给一个人看的 H5 小游戏：放进第一张照片，点亮星星，刮开回忆，最后贴贴。",
+  "lang": "zh-CN",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7e2e2",
+  "theme_color": "#f4e2da",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
