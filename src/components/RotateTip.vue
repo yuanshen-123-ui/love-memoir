@@ -40,7 +40,7 @@ defineProps({
     gap: 22px;
     padding: 24px;
     text-align: center;
-    background: linear-gradient(165deg, #f9ecd7 0%, #f7e2e2 52%, #eccfda 100%);
+    background: var(--bg-grad, #f7e2e2);
   }
 }
 

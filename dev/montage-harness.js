@@ -12,6 +12,8 @@ import MontagePlayer from '../src/components/MontagePlayer.vue'
 const q = new URLSearchParams(location.search)
 const slotMs = Number(q.get('slot') || 1500)
 const fadeMs = Number(q.get('fade') || 600)
+/** tone=site（默认，与页面同底色）/ dark（纯黑） */
+const tone = q.get('tone') || 'site'
 
 function makePhotos(n) {
   const out = []
@@ -72,6 +74,7 @@ createApp({
               lines,
               slotMs,
               fadeMs,
+              tone,
               onEnded: () => {
                 endedCount.value += 1
                 if (!window.__harness.endedAt) window.__harness.endedAt = performance.now()

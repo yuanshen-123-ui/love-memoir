@@ -6,11 +6,28 @@
     <title>MontagePlayer 开发预览</title>
     <link rel="icon" href="/icons/icon-192.png" />
     <style>
+      /*
+        和产品页同一个底色（index.html 的 --bg-grad）：
+        MontagePlayer 默认 tone="site" 是透明的，底色由宿主页面决定，
+        这里把同样的渐变铺上，预览时看到的就和真实页面一致。
+      */
       html,
       body {
         margin: 0;
         height: 100%;
-        background: #000;
+      }
+      html {
+        background: #f7e2e2;
+        background-image: linear-gradient(
+          165deg,
+          #f9ecd7 0%,
+          #f7e2e2 42%,
+          #f2dbe4 70%,
+          #eccfda 100%
+        );
+      }
+      body {
+        background: transparent;
       }
       #app {
         height: 100%;

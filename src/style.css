@@ -79,7 +79,9 @@ body {
   font-size: 16px;
   line-height: 1.5;
   color: var(--c-ink);
-  background: #f6e3dc; /* 兜底色，真正的渐变在 .bg 层 */
+  /* 透明！全站底色由 index.html 里的 html 统一画（--bg-grad / --bg-fill）。
+     这里一旦写颜色，就会盖住那层渐变 —— 之前写 #f6e3dc 就是「首屏纯色、挂载后渐变」闪变的原因 */
+  background: transparent;
 
   /* 防回弹三连：滚不动、不橡皮筋、只有纵向手势 */
   overflow: hidden;

@@ -296,11 +296,13 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 
-/* 主渐变：香槟金 → 冷玫瑰 */
+/* 主渐变：香槟金 → 冷玫瑰。
+   颜色值不在这里写死 —— 唯一来源是 index.html 里的 --bg-grad（首屏就要用，必须内联）。
+   这一层只负责「和 html 那层同色」，所以它铺同样的渐变，视觉上完全无缝。 */
 .bg-base {
   position: absolute;
   inset: 0;
-  background: linear-gradient(165deg, #f9ecd7 0%, #f7e2e2 42%, #f2dbe4 70%, #eccfda 100%);
+  background: var(--bg-grad, #f7e2e2);
 }
 
 /* 三团柔光：用 radial-gradient 而不是 filter: blur() ——

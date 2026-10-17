@@ -257,9 +257,31 @@ CSS 动画会因为动画名变了自动从头播；六套轮转、两个槽交�
   :photos="base64List"   <!-- 20 张 base64 或 URL -->
   :lines="captions"      <!-- 和照片一一对应的字幕 -->
   :slot-ms="1500"
+  tone="site"            <!-- 默认 site：透明，露出宿主页面同一个底色；dark = 纯黑电影感 -->
   @ended="() => (showHearts = true)"
 />
 ```
+
+> 默认 `tone="site"` 是刻意的：这块是全屏的，如果固定纯黑，播放时整站底色会突然变成另一块颜色。
+> 照片本身是 `object-fit: cover` 铺满的，底色只在交叉淡化那 600ms 里露出来。
+
+### 5.9 底色只有一个来源
+
+踩过一次很典型的坑：
+
+`index.html` 内联了一个渐变（想给首屏用），`style.css` 的 `body` 又写了个纯色 `#f6e3dc`。
+而 Vite 会把 style.css 打包成 `<link>` 插在 `<head>` **末尾** —— 它排在 `<style>` 后面，
+于是**内联那个渐变根本没生效**，被纯色覆盖了。
+结果就是：打开页面先看到一块纯色，JS 挂载后才变成渐变，底色肉眼可见地跳了一下。
+
+现在规则只有一条：**底色只在 `index.html` 的 `:root` 里定义一次**（`--bg-grad` / `--bg-fill`）。
+
+- `html` 负责画渐变（首屏第一帧就有底色，不白闪）
+- `body` 必须 `background: transparent`，否则会盖住 html 那层
+- `style.css` 的 `.bg-base`、`RotateTip` 都只 `var(--bg-grad)`，不写色值
+- `theme-color` 与 manifest 的 `theme_color` / `background_color` 都等于 `--bg-fill`
+
+`tests/background.test.js` 守住这条（连「全仓库只有 `index.html` 一处出现那个渐变色值」都断言了），以后再有人手抖写第二个色值 / 给 body 加背景，CI 直接红。
 
 ---
 
@@ -279,6 +301,7 @@ npm run check  # 上面两个 + build
 | `tests/random.test.js` | 同种子同序列、值域、10 桶分布均匀 |
 | `tests/image.test.js` | 横图/竖图/全景/小图不放大/异常输入不出 0 |
 | `tests/config.test.js` | 仓库里的 config 必须通过自检；每道题恰好一个 `ok: true`；故意改坏的 6 种情况都能报出来 |
+| `tests/background.test.js` | **底色单一来源**：body 必须透明、`style.css` 不得重复定义 `--bg-grad`、全仓库只有 `index.html` 出现那个渐变色值、`theme-color` / manifest 与 `--bg-fill` 对齐（这个测试是为了防止「首屏一个色、挂载后另一个色」的闪变复发） |
 
 CI（GitHub Actions）在 push/PR 上跑：`npm ci → lint → test → build → 产物体积 → 静态检查`。
 静态检查是三条硬红线：**禁止原生 `alert/confirm/prompt`**、**禁止 `:hover`**、**`100vh` 只许出现在 `.style` 的三级兜底里**。

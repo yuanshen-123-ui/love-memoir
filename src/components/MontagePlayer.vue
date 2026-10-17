@@ -39,6 +39,12 @@ const props = defineProps({
   progress: { type: Boolean, default: true },
   /** 挂载后是否自动播放 */
   autoplay: { type: Boolean, default: true },
+  /**
+   * 底色：
+   *   'site'（默认）= 透明，直接露出宿主页面的底色 —— 整站底色一致，不会出现「一片黑」
+   *   'dark'        = 纯黑 #07070a，电影/短视频那种沉浸感
+   */
+  tone: { type: String, default: 'site' },
 })
 
 const emit = defineEmits(['ended', 'change'])
@@ -81,6 +87,8 @@ const decoded = new Set()
 const cssVars = computed(() => ({
   '--slot-ms': `${props.slotMs}ms`,
   '--fade-ms': `${props.fadeMs}ms`,
+  // tone='site' 时给透明：底下的页面底色会透上来（photos 是 cover 的，只有交叉淡化那 600ms 能看见底色）
+  '--montage-bg': props.tone === 'dark' ? '#07070a' : 'transparent',
 }))
 
 /* ========================================================================== */
@@ -406,7 +414,8 @@ onBeforeUnmount(() => {
   height: 100%;
   height: 100dvh;
   overflow: hidden;
-  background: #07070a;
+  /* 由 tone 决定：默认透明 → 露出页面底色，整站底色一致；tone="dark" 时是纯黑 */
+  background: var(--montage-bg, transparent);
   /* 全屏播放器：禁止页面跟着手指滚动 / 微信下拉回弹 */
   overscroll-behavior: none;
   touch-action: none;

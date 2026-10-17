@@ -14,8 +14,9 @@
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
     />
 
-    <!-- iOS 状态栏与浏览器 UI 的配色（安卓微信/Chrome 也读这个） -->
-    <meta name="theme-color" content="#f4e2da" />
+    <!-- iOS 状态栏与浏览器 UI 的配色（安卓微信/Chrome 也读这个）。
+         必须和 index.html 里 --bg-fill / manifest.theme_color 一致，否则状态栏会有一条「另一种颜色」 -->
+    <meta name="theme-color" content="#f7e2e2" />
 
     <!-- 别把日期/电话识别成可点链接（微信里点了会跳走，很破坏体验） -->
     <meta name="format-detection" content="telephone=no, email=no, address=no" />
@@ -45,17 +46,34 @@
 
     <style>
       /*
-        首屏兜底样式（内联，先于 JS 生效）：
-        避免 Vue 挂载前出现白屏 flash，也避免这一瞬间出现原生滚动条。
-        真正的设计系统在 src/style.css 里。
+        ★ 全站底色在这里定义 —— 这是唯一来源，src/style.css 不再重复定义。
+
+        为什么必须放在 <head> 内联：
+          Vite 会把 style.css 打包成 <link> 插到 head 末尾，
+          在它加载完成之前页面没有任何底色（白闪）。所以底色要在最前面就画上。
+
+        以前这里写的是另一个渐变、而 style.css 里 body 又写了个纯色 #f6e3dc，
+        结果 <link> 覆盖了内联渐变 → 首屏是纯色、挂载后是渐变，一眼就能看出「底色变了」。
+        现在三处统一成同一个 --bg-grad / --bg-fill：
+          · html 画渐变（body 与 #app 全部透明，谁都不盖它）
+          · style.css 的 .bg-base 用 var(--bg-grad) 再铺一层（它也是透明的，只为叠光球）
       */
+      :root {
+        --bg-grad: linear-gradient(165deg, #f9ecd7 0%, #f7e2e2 42%, #f2dbe4 70%, #eccfda 100%);
+        --bg-fill: #f7e2e2; /* 渐变取不到时的兜底纯色，也是浏览器 UI / manifest 的主题色 */
+      }
       html,
       body {
         margin: 0;
         height: 100%;
       }
+      html {
+        background: var(--bg-fill);
+        background-image: var(--bg-grad);
+      }
       body {
-        background: linear-gradient(160deg, #f7e6cf 0%, #f6dfe3 48%, #f0d6df 100%);
+        /* 透明！否则 body 自身的底色会盖住 html 上那层渐变 */
+        background: transparent;
         overflow: hidden;
         overscroll-behavior-y: none;
         -webkit-tap-highlight-color: transparent;
