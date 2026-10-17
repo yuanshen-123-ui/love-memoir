@@ -27,6 +27,7 @@
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import GlassButton from './GlassButton.vue'
 import { vibrate } from '../utils/misc.js'
+import { sfx } from '../audio/sound.js'
 
 const props = defineProps({
   /** 开场选中的照片（dataURL） */
@@ -274,6 +275,8 @@ function reveal() {
   if (revealed.value) return
   revealed.value = true
   vibrate(18)
+  // 一串上行的五声音阶：刮开的那一下要有「揭晓」的仪式感
+  sfx.reveal()
 }
 
 /* ========================================================================== */
@@ -313,7 +316,9 @@ onBeforeUnmount(() => {
     <!-- 舞台：照片 + 遮罩画布，尺寸同相框一样受 --app-h 约束 -->
     <div class="scratch-wrap">
       <div ref="stageEl" class="scratch-stage">
-        <img class="scratch-photo" :src="photo" alt="我们的照片" />
+        <!-- 揭晓后照片极缓慢地推近（Ken Burns），静的东西有了呼吸 -->
+        <img class="scratch-photo" :class="{ 'is-revealed': revealed }" :src="photo" alt="我们的照片" />
+        <span class="grain" aria-hidden="true"></span>
         <canvas
           ref="canvasEl"
           class="scratch-canvas"
@@ -366,6 +371,20 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  will-change: transform;
+}
+/* 揭晓后缓慢推近 6%：18 秒走完，几乎察觉不到，但照片「活了」 */
+.scratch-photo.is-revealed {
+  animation: kenburns 18s ease-out forwards;
+}
+
+@keyframes kenburns {
+  from {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.06) translate3d(-1%, -1.5%, 0);
+  }
 }
 
 .scratch-canvas {

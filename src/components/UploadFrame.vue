@@ -114,6 +114,7 @@ function onDropEnd() {
           <!-- 有照片：弹簧落入 -->
           <div v-else class="frame-photo" :class="{ 'drop-in': justPicked }" @animationend="onDropEnd">
             <img :src="photo" alt="我们的第一张回忆" />
+            <span class="grain" aria-hidden="true"></span>
             <span class="frame-sheen" aria-hidden="true"></span>
           </div>
         </div>

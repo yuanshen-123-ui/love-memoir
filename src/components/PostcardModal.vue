@@ -9,9 +9,12 @@
  *      整页永远不滚，符合「防回弹」的整体设定
  *    · 底部按钮额外让出 env(safe-area-inset-bottom)
  *    · 上浮用弹簧曲线：从屏幕底部"抽出来"的手感
+ *
+ *  除了「收下这封情书」，这里还能把它画成一张真图片存下来（见 PosterModal）。
  * ========================================================================== */
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import GlassButton from './GlassButton.vue'
+import PosterModal from './PosterModal.vue'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -21,6 +24,10 @@ const props = defineProps({
 const emit = defineEmits(['accept'])
 
 const pc = computed(() => props.config.postcard)
+const poster = computed(() => props.config.poster)
+
+/** 海报弹层是否打开 */
+const posterOpen = ref(false)
 </script>
 
 <template>
@@ -37,6 +44,7 @@ const pc = computed(() => props.config.postcard)
 
           <div v-if="photo" class="pc-photo">
             <img :src="photo" alt="我们的照片" />
+            <span class="grain" aria-hidden="true"></span>
           </div>
 
           <p class="pc-to">{{ pc.to }}</p>
@@ -52,11 +60,24 @@ const pc = computed(() => props.config.postcard)
         </div>
 
         <div class="pc-actions">
+          <!-- 次要操作在上、主操作贴底（拇指最好按的位置） -->
+          <button type="button" class="pc-poster press" @click="posterOpen = true">
+            <span class="pc-poster-icon" aria-hidden="true">♥</span>
+            {{ poster.open }}
+          </button>
           <GlassButton block @click="emit('accept')">{{ pc.accept }}</GlassButton>
         </div>
       </div>
     </div>
   </Transition>
+
+  <!-- 海报弹层（比明信片更高一层） -->
+  <PosterModal
+    :show="posterOpen"
+    :photo="photo"
+    :config="config"
+    @close="posterOpen = false"
+  />
 </template>
 
 <style scoped>
@@ -98,8 +119,7 @@ const pc = computed(() => props.config.postcard)
   place-items: center;
   border-radius: 6px;
   background: linear-gradient(135deg, #fbeacb, #f7d4dd);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8),
-    0 2px 6px rgba(170, 110, 130, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8), 0 2px 6px rgba(170, 110, 130, 0.18);
   transform: rotate(8deg);
 }
 .pc-stamp-heart {
@@ -127,6 +147,7 @@ const pc = computed(() => props.config.postcard)
 }
 
 .pc-photo {
+  position: relative;
   width: 100%;
   aspect-ratio: 5 / 4;
   border-radius: 16px;
@@ -150,8 +171,9 @@ const pc = computed(() => props.config.postcard)
 
 .pc-line {
   margin: 0 0 6px;
+  font-family: var(--font-serif);
   font-size: 14.5px;
-  line-height: 1.7;
+  line-height: 1.85;
   color: #5b4149;
   /* 逐行淡入：不需要 JS，纯 CSS 延迟 */
   animation: floatUp 0.5s var(--ease-spring) both;
@@ -160,6 +182,7 @@ const pc = computed(() => props.config.postcard)
 
 .pc-sign {
   margin: 14px 0 0;
+  font-family: var(--font-serif);
   font-size: 13px;
   color: var(--c-ink-soft);
   text-align: right;
@@ -176,7 +199,29 @@ const pc = computed(() => props.config.postcard)
 
 .pc-actions {
   flex: none;
+  display: grid;
+  gap: 9px;
   padding-top: 14px;
+}
+
+/* 「存成图片」：次要操作做得很轻，不抢主按钮 */
+.pc-poster {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #8a5a63;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.pc-poster-icon {
+  font-size: 11px;
+  color: rgba(214, 146, 160, 0.9);
 }
 
 /* ------------------------------------------------------- 上浮动画（弹簧） */

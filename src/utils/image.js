@@ -111,13 +111,25 @@ async function decodeImage(file) {
 }
 
 /**
+ * 纯函数：算出压缩后的目标尺寸（不改 DOM，方便单元测试）
+ * 规则：长边不超过 maxSize；小图绝不放大（放大只会变糊、还更占体积）
+ */
+export function fitSize(srcW, srcH, maxSize) {
+  const w = Math.max(1, Math.round(srcW) || 1)
+  const h = Math.max(1, Math.round(srcH) || 1)
+  const scale = Math.min(1, maxSize / Math.max(w, h))
+  return {
+    width: Math.max(1, Math.round(w * scale)),
+    height: Math.max(1, Math.round(h * scale)),
+  }
+}
+
+/**
  * 一次 canvas 绘制 → JPEG Base64
  * 注意：canvas 尺寸按缩放后的实际像素开，不要开成原图尺寸再缩小 —— 那样内存直接爆。
  */
 function drawToJpeg(source, srcW, srcH, maxSize, quality) {
-  const scale = Math.min(1, maxSize / Math.max(srcW, srcH))
-  const w = Math.max(1, Math.round(srcW * scale))
-  const h = Math.max(1, Math.round(srcH * scale))
+  const { width: w, height: h } = fitSize(srcW, srcH, maxSize)
 
   const canvas = document.createElement('canvas')
   canvas.width = w

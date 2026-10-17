@@ -12,8 +12,10 @@
  *    硬用 transition 会变成抖一下就弹回来、没有弹性衰减的味道。
  * ========================================================================== */
 import { ref, computed } from 'vue'
-import { vibrate, pickOne } from '../utils/misc.js'
+import { vibrate } from '../utils/misc.js'
+import { pickOne } from '../utils/random.js'
 import { toast } from '../composables/useToast.js'
+import { sfx } from '../audio/sound.js'
 
 const props = defineProps({
   config: { type: Object, required: true },
@@ -32,15 +34,30 @@ const locked = ref(false)
 const current = computed(() => questions[index.value])
 const isLast = computed(() => index.value === questions.length - 1)
 
+/**
+ * 正确答案的下标。
+ * 兜底逻辑：如果 config.js 里某题忘了标 ok:true，这一题会永远过不去 ——
+ * 与其让她卡死在这里，不如把第一个选项当正确答案，并在控制台提醒改配置。
+ */
+function correctIndexOf(q) {
+  if (!q || !Array.isArray(q.options)) return 0
+  const i = q.options.findIndex((o) => o && o.ok === true)
+  if (i < 0) {
+    console.warn('[love-memoir] 这道题没有标 ok: true，已把第一个选项当作正确答案：', q.q)
+    return 0
+  }
+  return i
+}
+
 /** 选一个答案 */
 function choose(i) {
   if (locked.value || shaking.value) return
 
-  const option = current.value.options[i]
-  if (option.ok) {
+  if (i === correctIndexOf(current.value)) {
     locked.value = true
     rightIndex.value = i
     vibrate(14)
+    sfx.success()
     // 停 700ms 让人看清「答对了」，再进下一题
     setTimeout(() => {
       if (isLast.value) {
@@ -57,6 +74,7 @@ function choose(i) {
   // 答错：抖一下 + 轻震动 + 一句安慰
   shaking.value = true
   vibrate([14, 34, 14])
+  sfx.wrong()
   toast(pickOne(quiz.wrong), 1600)
   setTimeout(() => {
     shaking.value = false
@@ -124,6 +142,14 @@ function choose(i) {
 }
 .quiz-card.is-shaking {
   animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+/* 尊重「减少动态效果」：不抖，改成一次红色泛光 —— 信息到了，但不动 */
+@media (prefers-reduced-motion: reduce) {
+  .quiz-card.is-shaking {
+    animation: none;
+    box-shadow: var(--glass-shadow), var(--glass-inner), 0 0 0 2px rgba(214, 120, 130, 0.55);
+    transition: box-shadow 0.2s ease;
+  }
 }
 .quiz-card.is-right {
   box-shadow: var(--glass-shadow), var(--glass-inner),

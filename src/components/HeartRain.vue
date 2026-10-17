@@ -18,8 +18,10 @@
  *    · animation-fill-mode: both —— 延迟期间也保持 0% 的状态（不可见），
  *      否则爱心会先扎堆出现在顶部再开始掉
  *    · 随机数用固定种子的线性同余（LCG），保证同一轮刷新结果一致，便于调试
+ *    · 系统开了「减少动态效果」时，CSS 会把下落换成纯淡入淡出（见 style.css）
  * ========================================================================== */
 import { computed, onBeforeUnmount, watch } from 'vue'
+import { makeLcg } from '../utils/random.js'
 
 const props = defineProps({
   /** 爱心数量，建议 30~50 */
@@ -29,25 +31,16 @@ const props = defineProps({
 })
 const emit = defineEmits(['finished'])
 
-/** 五种偏暖的粉金色，混着白色才有bling的感觉 */
+/** 五种偏暖的粉金色，混着白色才有 bling 的感觉 */
 const TINTS = ['#e88ea8', '#f0b3c4', '#f3cfa2', '#ffffff', '#d98aa4']
 
-/** 线性同余伪随机：给定 seed 就能复现同一套参数 */
-function makeRandom(seed) {
-  let state = (seed * 9301 + 49297) % 233280
-  return () => {
-    state = (state * 9301 + 49297) % 233280
-    return state / 233280
-  }
-}
-
 const hearts = computed(() => {
-  const rand = makeRandom(props.round + 7)
+  const rand = makeLcg(props.round + 7)
   const list = []
   for (let i = 0; i < props.count; i++) {
     list.push({
       id: `${props.round}-${i}`,
-      left: 2 + rand() * 96, // vw 百分比
+      left: 2 + rand() * 96, // 百分比定位
       size: 12 + rand() * 18, // px
       delay: rand() * 1.5, // s
       duration: 3.4 + rand() * 2.4, // s
@@ -120,5 +113,13 @@ onBeforeUnmount(() => clearTimeout(finishTimer))
   text-shadow: 0 1px 4px rgba(120, 60, 80, 0.18);
   /* 不参与布局计算 */
   contain: layout style;
+}
+
+/* 减少动态效果：不下落，只在原地柔和地亮一下再消失 */
+@media (prefers-reduced-motion: reduce) {
+  .rain-heart {
+    animation-name: heartFade;
+    animation-timing-function: ease-out;
+  }
 }
 </style>

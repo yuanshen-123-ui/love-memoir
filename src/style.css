@@ -24,6 +24,10 @@
   --c-ink-faint: rgba(74, 54, 60, 0.4);
   --c-white: #fff;
 
+  /* 写情话用的衬线体：iOS 命中宋体（Songti SC），安卓落到 Noto Serif，
+     比黑体多一分「信纸」的味道，而且不用下载任何字体文件 */
+  --font-serif: 'Songti SC', 'STSong', 'SimSun', 'Songti TC', 'Noto Serif CJK SC', serif;
+
   /* ---- 液态玻璃 ------------------------------------------------ */
   /* blur 固定 12px：再高在安卓 X5 内核上会明显掉帧，这是实测的甜点 */
   --glass-blur: 12px;
@@ -327,6 +331,41 @@ html {
   pointer-events: none;
 }
 
+/* --------------------------------------------------------------- 胶片颗粒 */
+/* 用 SVG 的 feTurbulence 现场生成噪点当背景图（一行 data URI，零资源）：
+   压在照片上 7% 不透明度，就有很淡的「胶片/底片」质感，不会糊也不占带宽。
+   注意不要加 mix-blend-mode —— 它会让这一层单独建合成层，和 backdrop-filter
+   叠在一起在老安卓上很贵，纯透明叠加已经够了。 */
+.grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.07;
+  border-radius: inherit;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 140px 140px;
+}
+
+/* ------------------------------------------------------------------ 无障碍 */
+/* 手机上用不到，但桌面键盘操作时必须有焦点可见 */
+:focus-visible {
+  outline: 2px solid rgba(190, 130, 150, 0.9);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+/* 只给读屏软件看的文字 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* --------------------------------------------------------------- 自定义提示 */
 /* 代替原生 alert()：原生 alert 在微信里会阻塞渲染、样式丑、还可能被拦截 */
 .toast-host {
@@ -491,6 +530,19 @@ html {
   100% {
     opacity: 0;
     transform: translate3d(var(--drift, 0px), 112vh, 0) rotate(var(--spin, 180deg)) scale(1);
+  }
+}
+
+/* 「减少动态效果」下的爱心：不下落，只在原地柔和地亮一下 */
+@keyframes heartFade {
+  0% {
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
   }
 }
 

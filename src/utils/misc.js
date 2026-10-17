@@ -13,13 +13,7 @@ export function vibrate(pattern = 8) {
   }
 }
 
-/** 从数组里随机取一个 */
-export function pickOne(list) {
-  if (!Array.isArray(list) || list.length === 0) return ''
-  return list[Math.floor(Math.random() * list.length)]
-}
-
-/** 限制在 [min, max] */
+/** 限制在 [min, max]（保留在这里，方便业务代码只 import 一个工具模块） */
 export function clamp(v, min, max) {
   return v < min ? min : v > max ? max : v
 }
