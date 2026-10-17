@@ -10,6 +10,15 @@ export default defineConfig({
     host: true, // 允许手机连同一局域网调试：http://<你的内网IP>:5174
     port: 5174,
     strictPort: true,
+    /**
+     * 本地开发时把后端请求代理到 uvicorn（127.0.0.1:8010），
+     * 这样前端代码里永远只写相对路径 /api/... —— 生产环境由 nginx 反代，
+     * 同一套代码两边都能跑，不用改 base。
+     */
+    proxy: {
+      '/api': { target: 'http://127.0.0.1:8010', changeOrigin: false },
+      '/static': { target: 'http://127.0.0.1:8010', changeOrigin: false },
+    },
   },
 
   build: {

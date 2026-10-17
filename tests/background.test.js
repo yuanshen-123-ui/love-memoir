@@ -21,6 +21,7 @@ const read = (p) => readFileSync(resolve(ROOT, p), 'utf8')
 const indexHtml = read('index.html')
 const styleCss = read('src/style.css')
 const appVue = read('src/App.vue')
+const bgDecor = read('src/components/BgDecor.vue')
 const rotateTip = read('src/components/RotateTip.vue')
 const manifest = JSON.parse(read('public/manifest.webmanifest'))
 
@@ -51,7 +52,8 @@ describe('页面底色：单一来源', () => {
   })
 
   it('.bg-base 与横屏提示都消费同一个变量，不写死色值', () => {
-    expect(appVue).toMatch(/\.bg-base\s*\{[^}]*background:\s*var\(--bg-grad/s)
+    // 背景层已经抽成 BgDecor.vue（首页 / 播放页 / 固定版共用）
+    expect(bgDecor).toMatch(/\.bg-base\s*\{[^}]*background:\s*var\(--bg-grad/s)
     expect(rotateTip).toMatch(/background:\s*var\(--bg-grad/)
   })
 
@@ -61,6 +63,7 @@ describe('页面底色：单一来源', () => {
       'index.html': indexHtml,
       'src/style.css': styleCss,
       'src/App.vue': appVue,
+      'src/components/BgDecor.vue': bgDecor,
       'src/components/RotateTip.vue': rotateTip,
     }
     const owners = Object.entries(files)

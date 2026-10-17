@@ -375,7 +375,9 @@ html {
   z-index: 90;
   left: 0;
   right: 0;
-  bottom: calc(96px + var(--safe-bottom));
+  /* 152px：留出页面底部操作栏的高度（创作页结果页有两行按钮，约 134px），
+     否则提示会正好压在按钮上把文字盖掉 */
+  bottom: calc(152px + var(--safe-bottom));
   display: flex;
   flex-direction: column;
   align-items: center;

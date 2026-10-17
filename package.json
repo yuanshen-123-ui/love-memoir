@@ -16,10 +16,13 @@
                     "test:watch":  "vitest",
                     "gen:icons":  "node scripts/gen-icons.mjs",
                     "check":  "npm run lint \u0026\u0026 npm run test \u0026\u0026 npm run build",
-                    "dev:montage":  "vite --open /dev/montage-harness.html"
+                    "dev:montage":  "vite --open /dev/montage-harness.html",
+                    "api":  "backend\\.venv\\Scripts\\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8010 --reload --app-dir backend",
+                    "test:api":  "cd backend \u0026\u0026 .venv\\Scripts\\python.exe -m pytest"
                 },
     "dependencies":  {
-                         "vue":  "^3.5.13"
+                         "vue":  "^3.5.13",
+                         "vue-router":  "^4.5.0"
                      },
     "devDependencies":  {
                             "@eslint/js":  "^9.17.0",
